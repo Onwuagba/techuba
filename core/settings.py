@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
-
+from celery import Celery
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +27,17 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# settings.py
 
+
+# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+
+# Use SQLite as the Celery message broker
+# settings.py
+CELERY_BROKER_URL = 'sqla+sqlite:///celery.sqlite3'
+CELERY_RESULT_BACKEND = 'db+sqlite:///celery.sqlite3'
+
+celery_app = Celery('core')
 # Application definition
 
 INSTALLED_APPS = [
@@ -37,9 +47,21 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # tools
     'rest_framework',
+
+    # apps
     'api',
 ]
+
+# CELERY_BROKER_URL = 'pyamqp://guest@8000//'
+# CELERY_BEAT_SCHEDULE = {
+#     'add-every-30-seconds': {
+#         'task': 'your_project_name.tasks.your_task',
+#         'schedule': 30.0,
+#     },
+# }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -52,6 +74,16 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'core.urls'
+AUTH_USER_MODEL = 'api.User'
+
+# settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
+        # Add other authentication classes as needed
+    ],
+}
 
 TEMPLATES = [
     {
@@ -99,14 +131,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
-]
-
-PASSWORD_HASHERS = [
-    "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
-    "django.contrib.auth.hashers.PBKDF2PasswordHasher",
-    "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
-    "django.contrib.auth.hashers.Argon2PasswordHasher",
-    "django.contrib.auth.hashers.ScryptPasswordHasher",
 ]
 
 # Internationalization

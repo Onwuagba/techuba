@@ -1,0 +1,21 @@
+NOTES 
+
+# app = Celery('api', broker='pyamqp://guest@localhost//')
+# app.conf.beat_schedule = {
+#     'auto-deposit': {
+#         'task': 'auto-deposit',
+#         'schedule': crontab(minute=0.5, hour=0),  # Adjust the schedule as needed
+#     },
+# }
+
+# @app.task    
+
+
+# class PiggyboxAuto(APIView):
+#     def post(self, request):
+#         user = request.data.get('user')
+#         amount = request.data.get('amount')
+
+#         result = auto_deposit.delay(user, amount)
+#         # You can handle the result or return a response if needed
+#         return Response(f'Task {result.task_id} has been scheduled for user {user} with amount {amount}')

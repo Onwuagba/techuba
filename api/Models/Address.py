@@ -14,6 +14,8 @@ class Address(models.Model):
     state = models.CharField(max_length=30, validators=[RegexValidator(regex='^[a-zA-z]*$', message='No numbers allowed', code='invalid_firstname')])
     country = models.CharField(max_length=5, choices=COUNTRIES,default='NG',)
 
+    class Meta:
+        verbose_name_plural = "Addresses"
 
     def __str__(self):
         return f"{self.state}, {self.country}"
