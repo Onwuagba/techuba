@@ -6,4 +6,4 @@ class AddressSerializer(serializers.ModelSerializer):
         model = Address.Address
         fields = '__all__'
 
-
+    country = serializers.ChoiceField(choices=Address.Address.COUNTRIES, initial='NG')
