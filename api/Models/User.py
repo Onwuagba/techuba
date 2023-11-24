@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.core import validators
 # from ..Hashing import hash_password
 import bcrypt
+import uuid
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password, **extra_fields):
@@ -38,11 +39,12 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
 
     PHONE_CODES = {
-    ('NG', '+234'),  
+    ('NG', '+234'),
     ('US', '+1'),  
     ('GH', '+235'),  
     }
-
+    
+    id = models.UUIDField(default=uuid.uuid4(), primary_key=True)
     firstname = models.CharField(max_length=30, null=True)
     lastname = models.CharField(max_length=30, null=True)
     email = models.EmailField(("email address"), unique=True)
@@ -50,10 +52,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)
     phone_code = models.CharField(choices=PHONE_CODES, max_length=10, default='NG')
-    phone = models.CharField(max_length=11, null=True)
-    address = models.ForeignKey(Address, on_delete=models.DO_NOTHING, null=True)
+    phone = models.CharField(max_length=11, null=True, unique=True)
+    address = models.ForeignKey(Address, on_delete=models.DO_NOTHING, null=True, blank=True)
     transaction_pin = models.CharField(max_length=4, null=False, default='', validators=[validators.MinLengthValidator(4)])
-
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -66,6 +67,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         # Hash the password with the salt
         hashed_password = bcrypt.hashpw(password.encode(), salt)
         return hashed_password
+    
+    def delete(self, *args, **kwargs):
+        # Handle deletion of associated address
+        if self.address:
+            self.address.delete()
+
+        super().delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         if self._state.adding:
@@ -73,7 +81,6 @@ class User(AbstractBaseUser, PermissionsMixin):
             super().save(*args, **kwargs)
         else:
             super().save(*args, **kwargs)
-
 
     def __str__(self):
         return self.email

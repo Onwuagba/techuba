@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 from celery import Celery
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,18 +28,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
-# settings.py
-
-
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
-
-# Use SQLite as the Celery message broker
-# settings.py
 CELERY_BROKER_URL = 'sqla+sqlite:///celery.sqlite3'
 CELERY_RESULT_BACKEND = 'db+sqlite:///celery.sqlite3'
 
 celery_app = Celery('core')
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -50,18 +43,15 @@ INSTALLED_APPS = [
 
     # tools
     'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
+
 
     # apps
     'api',
 ]
 
-# CELERY_BROKER_URL = 'pyamqp://guest@8000//'
-# CELERY_BEAT_SCHEDULE = {
-#     'add-every-30-seconds': {
-#         'task': 'your_project_name.tasks.your_task',
-#         'schedule': 30.0,
-#     },
-# }
+LOGIN_URL = 'api-auth/login/'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -73,17 +63,31 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "UPDATE_LAST_LOGIN": False,
+}
+
 ROOT_URLCONF = 'core.urls'
 AUTH_USER_MODEL = 'api.User'
 
 # settings.py
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.TokenAuthentication',
-        # Add other authentication classes as needed
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+
     ],
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination', 
+    'PAGE_SIZE': 2,
 }
+
 
 TEMPLATES = [
     {

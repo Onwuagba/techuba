@@ -8,14 +8,14 @@ class Address(models.Model):
     ('SN', 'Senegal'), 
     ('CIV', 'Ivory Coast')
     }
-    number = models.CharField(max_length=6)
-    street = models.CharField(max_length=30, validators=[RegexValidator(regex='^[a-zA-z]*$', message='No numbers allowed', code='invalid_firstname')])
-    city = models.CharField(max_length=30, validators=[RegexValidator(regex='^[a-zA-z]*$', message='No numbers allowed', code='invalid_firstname')])
-    state = models.CharField(max_length=30, validators=[RegexValidator(regex='^[a-zA-z]*$', message='No numbers allowed', code='invalid_firstname')])
-    country = models.CharField(max_length=5, choices=COUNTRIES,default='NG',)
+    number = models.CharField(max_length=6, null=True, blank=True)
+    street = models.CharField(max_length=30, null=True, blank=True, validators=[RegexValidator(regex='^[a-zA-z]*$', message='No numbers allowed', code='invalid_street_name')])
+    city = models.CharField(max_length=30, null=True, blank=True, validators=[RegexValidator(regex='^[a-zA-z]*$', message='No numbers allowed', code='invalid_city_name')])
+    state = models.CharField(max_length=30, null=True, blank=True, validators=[RegexValidator(regex='^[a-zA-z]*$', message='No numbers allowed', code='invalid_state_name')])
+    country = models.CharField(max_length=5, null=True, blank=True, choices=COUNTRIES,default='NG',)
 
     class Meta:
         verbose_name_plural = "Addresses"
 
     def __str__(self):
-        return f"{self.state}, {self.country}"
+        return f"{self.number} {self.street} {self.city} {self.state}, {self.country}"

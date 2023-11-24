@@ -7,11 +7,9 @@ import bcrypt
 
 
 def generate_patterned_digits():
-# Define your pattern or logic to generate the ten digits
-# For example, let's generate a random 10-digit number
     return ''.join(random.choices(string.digits, k=10))
-class Account(models.Model):
 
+class Account(models.Model):
     username = models.ForeignKey(User, on_delete=models.CASCADE, null= False, related_name="accounts")
     account_number = models.CharField(max_length=10, null=False, unique=True, default=generate_patterned_digits,)
     account_balance = models.BigIntegerField(default=0, null=False)
@@ -31,5 +29,5 @@ class Account(models.Model):
             super().save(*args, **kwargs)
 
     def __str__(self):
-        return (f"{self.account_number}")
+        return self.account_number
     
