@@ -8,7 +8,3 @@ from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 
 # @authentication_classes(['rest_framework.authentication.TokenAuthentication'])
-
-class SignUpView(generics.CreateAPIView):
-    serializer_class = UserSerializer.UserSerializer
-    queryset = User.User.objects.all()

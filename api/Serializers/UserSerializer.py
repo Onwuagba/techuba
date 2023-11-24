@@ -6,10 +6,19 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['id','firstname', 'lastname', 'password', 'email', 'is_superuser', 'is_active', 'phone_code', 'phone', 'transaction_pin', 'address']
 
     address = AddressSerializer()
     phone_code = serializers.ChoiceField(choices=User.PHONE_CODES, initial='NG')
+
+    def create(self, validated_data):
+        user = User(
+            email=validated_data['email'],
+            username=validated_data['username'],
+        )
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
 
     def create(self, validated_data):
         address_data = validated_data.pop('address')

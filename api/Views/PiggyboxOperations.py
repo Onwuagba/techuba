@@ -9,34 +9,61 @@ from datetime import datetime
 from decimal import Decimal
 from ..Hashing import check_password
 
-
-# from celery import Celery
-# from celery.schedules import crontab
-
-
-
 class PiggyboxInfo(APIView):
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            
+            piggy_id = self.kwargs.get('id')
             try:
-                piggybox = Piggybox.objects.get(username = request.user)
+                piggybox = Piggybox.objects.get(id=piggy_id)
+                
+                piggybox_info = {
+                    "Creator": piggybox.username.email,
+                    "Box": piggybox.name_of_box,
+                    "Date Created": piggybox.date_created,
+                    "Target Amount": piggybox.target_amount,
+                    "Current Amount": piggybox.current_amount
+                }
 
-                if piggybox:
-                    return Response(f"Creator: {piggybox.username} --- Box: {piggybox.name_of_box} --- Date created: {piggybox.date_created} --- Target amount: {piggybox.target_amount} --- Current Amount: {piggybox.current_amount}")
-                else:
-                    return Response("User has no existing piggybox", status=404)
+                return Response(piggybox_info)
+
             except Piggybox.DoesNotExist:
-                return Response("No such box")
+                return Response("No such box", status=404)
         else:
             return Response("User is not authenticated")
+
+from django.shortcuts import get_object_or_404
+
+class MyPiggyboxes(APIView):
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            piggyboxes = Piggybox.objects.filter(username= request.user)
+            piggybox_info_list = []
+
+            for piggybox in piggyboxes:
+                piggybox_info = {
+                    "Creator": piggybox.username.email,
+                    "Box": piggybox.name_of_box,
+                    "Date Created": piggybox.date_created,
+                    "Target Amount": piggybox.target_amount,
+                    "Current Amount": piggybox.current_amount
+                }
+                piggybox_info_list.append(piggybox_info)
+
+            if piggybox_info_list:
+                return Response(piggybox_info_list)
+            else:
+                return Response("You don't have a piggybox yet. Make one today and start saving", status=404)
+        else:
+            return Response("User is not authenticated")
+
+
 
 class PiggyboxDelete(APIView):
     def delete(self, request):
         if request.user.is_authenticated:
-            
+            piggy = request.data.get('box_name')
             try:
-                piggybox = Piggybox.objects.get(username = request.user)
+                piggybox = Piggybox.objects.get(username = request.user, name_of_box = piggy)
 
                 if request.user == piggybox.username:
                     piggybox.delete()
@@ -44,7 +71,7 @@ class PiggyboxDelete(APIView):
                 else:
                     return Response("User is not permitted to delete",  status=403)
             except Piggybox.DoesNotExist:
-                return Response("No such box", status=404)
+                return Response(f"You don't have a piggybox named {piggy}", status=404)
 
             # Delete all the transactions in this account
         else:
@@ -53,46 +80,51 @@ class PiggyboxDelete(APIView):
 class PiggyboxWithdraw(APIView):
     def post(self, request):
         if request.user.is_authenticated:
+            account = request.data.get('account')
             amount = request.data.get('amount')
+            box = request.data.get('box')
             try:
-                user_piggybox = Piggybox.objects.get(username = request.user)
+                user_piggybox = request.user.piggyboxes.get(name_of_box = box)
                 piggybox = user_piggybox
 
                 current_amount = Decimal(piggybox.current_amount)
                 target_amount = Decimal(piggybox.target_amount)
                 amount = Decimal(amount)
 
-                user_account = Account.objects.get(username = request.user)
-                account = user_account
+                user_account = request.user.accounts.all()
+                account = user_account.get(account_number = account)
 
-                if amount:
-                    if amount > current_amount:
-                        return Response("Your withdrawal request exceeds your current piggybox balance.")
-                    elif amount <= current_amount:
-                        if current_amount < target_amount:
-                            # Update current_amount on the instance
-                            piggybox.current_amount -= amount
-                            penalty = amount * Decimal('0.25')
-                            account.account_balance += amount
-                            # Save the instance to persist the changes
-                            account.save()
-                            piggybox.save()
+                if request.user == piggybox.username:
+                    if amount:
+                        if amount > current_amount:
+                            return Response("Your withdrawal request exceeds your current piggybox balance.")
+                        elif amount <= current_amount:
+                            if current_amount < target_amount:
+                                # Update current_amount on the instance
+                                piggybox.current_amount -= amount
+                                penalty = amount * Decimal('0.25')
+                                account.account_balance += amount
+                                # Save the instance to persist the changes
+                                account.save()
+                                piggybox.save()
 
-                            return Response(f"You have withdrawn N{amount} and we keep N{penalty:.2f} as a penalty for early withdrawal!")
-                        elif current_amount >= target_amount:
-                            piggybox.current_amount -= amount
-                            account.account_balance += amount
+                                return Response(f"You have withdrawn N{amount} and we keep N{penalty:.2f} as a penalty for early withdrawal!")
+                            elif current_amount >= target_amount:
+                                piggybox.current_amount -= amount
+                                account.account_balance += amount
 
-                            piggybox.save()
-                            account.save()
+                                piggybox.save()
+                                account.save()
 
-                            return Response(f"You reached your target and have withdrawn N{amount}")
+                                return Response(f"You reached your target and have withdrawn N{amount}")
 
+                    else:
+                        return Response("Please enter a valid amount to withdraw")
                 else:
-                    return Response("Please enter a valid amount to withdraw")
+                    return Response("You do not have access to this function")
 
             except Piggybox.DoesNotExist:
-                return Response('No such box')
+                return Response(f"You don't have a piggybox named {box}")
             except Exception as e:
                 print(f"Exception: {e}")
                 return Response("An error occurred during withdrawal.")
@@ -103,18 +135,17 @@ class PiggyboxDeposit(APIView):
 # ...
     def post(self, request):
         if request.user.is_authenticated:
-            # box_name = request.data.get('box')
+            account = request.data.get('account')
+            box_name = request.data.get('box_name')
             amount = request.data.get('amount')
             pin = request.data.get('pin')
 
 
-            user = request.user.piggyboxes.all()
-            piggybox = user.first()
-            
-            # return Response(f"{piggybox}")
-            
-            user_account = request.user.accounts.all()
-            account = user_account.first()
+            user = request.user.piggyboxes.get(name_of_box = box_name)
+            piggybox = user
+                        
+            user_accounts = request.user.accounts.all()
+            account = user_accounts.get(account_number = account)
 
             try:
                 amount = Decimal(amount)

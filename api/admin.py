@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django import forms
 
-from .models import User, Account, SavingsGroup, Piggybox, Address
+from .models import User, Account, SavingsGroup, Piggybox, Address, SGDeposit
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm
 
@@ -10,6 +10,7 @@ from django.contrib.auth.forms import UserCreationForm
 admin.site.register(Address)
 admin.site.register(SavingsGroup)
 admin.site.register(Piggybox)
+admin.site.register(SGDeposit)
 # admin.site.register(models.User)
 
 
@@ -27,6 +28,26 @@ class CustomUserCreationForm(UserCreationForm):
 
 @admin.register(User)
 class CustomAdmin(UserAdmin):
+
+    def get_fieldsets(self, request, obj=None):
+        if not request.user.is_superuser:
+            # if the user is not a superuser,
+            # remove the "Permissions" and "Important dates" sections
+            return (
+                (None, {"fields": ("username", "password")}),
+                (
+                    ("Personal info"),
+                    {
+                        "fields": (
+                            "first_name",
+                            "last_name",
+                            "phone_number",
+                            "email",
+                        )
+                    },
+                ),
+            )
+        return super().get_fieldsets(request, obj)
    
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)

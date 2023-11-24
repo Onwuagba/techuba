@@ -1,28 +1,40 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from ..models import User, Account
+from ..models import User, Account, TransactionHistory
 from ..serializers import AccountSerializer
 from ..Hashing import check_password
+from datetime import datetime
 import pdb
 
 class Withdraw(APIView):
 
     def post(self, request):
         if request.user.is_authenticated:
+            account = request.data.get('account')
             amount = request.data.get('amount')
             pin = request.data.get('pin')
 
-            accounts = request.user.accounts.all()
-            if accounts:
-                w_account = accounts.first() 
+            w_account = request.user.accounts.get(account_number = account)
+
+            
             try:
                 amount = float(amount)
-
+                
                 if amount:
                     if check_password(pin.encode('utf-8'), w_account.pin.encode('utf-8')):
                         if w_account.account_balance > amount:
                             w_account.account_balance -= amount
                             w_account.save()
+
+                            TransactionHistory.objects.create(
+                                account=w_account,
+                                account_number=w_account.account_number,
+                                transaction_type='Withdrawal',
+                                amount = amount,
+                                timestamp = datetime.now(),
+                                account_balance = w_account.account_balance
+                            )
+
                             return Response(f'You have successfully withdrawn N{amount}' )
                         else:
                             return Response(f'Withdrawal failed due to insufficient funds in account with account number {w_account.account_number}')
@@ -34,3 +46,5 @@ class Withdraw(APIView):
                 return Response('This account does not exist' )
         else:
             return Response("User is not authenticated")
+        
+
