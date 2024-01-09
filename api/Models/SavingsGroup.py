@@ -19,7 +19,7 @@ class SavingsGroup(models.Model):
     interest = models.FloatField(default=0, editable=False)
     group_members = models.ManyToManyField(User, related_name='group_members', blank=True, default='')
     is_private = models.BooleanField(default=False)
-
+    
     def __str__(self):
         return self.group_name
     

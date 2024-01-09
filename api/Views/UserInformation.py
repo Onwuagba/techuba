@@ -6,7 +6,7 @@ from ..Models.SavingsGroup import SavingsGroup
 from rest_framework.response import Response
 
 
-class UserInformationView(APIView):
+class ProfileOverview(APIView):
     def get_piggybox_info(self, user):
         piggybox_info = Piggybox.objects.filter(username=user)
         return piggybox_info

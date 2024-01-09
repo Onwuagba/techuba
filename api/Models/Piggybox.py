@@ -1,6 +1,7 @@
 from django.db import models
 from ..models import User
 from django.utils import timezone
+from django.core.validators import MinValueValidator
 from datetime import datetime
 import random
 import string
@@ -12,9 +13,8 @@ class Piggybox(models.Model):
     date_break = models.DateTimeField(null=True, blank=True)
     date_fulfilled = models.DateTimeField(null=True, blank=True)
     target_amount = models.PositiveIntegerField(default=0, null=False)
-    current_amount = models.PositiveBigIntegerField(default=0)
+    current_amount = models.PositiveIntegerField(default=0, validators=[MinValueValidator(0)])
     interest = models.FloatField(default=0.5)
-
 
 
     class Meta:

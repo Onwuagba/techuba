@@ -2,6 +2,7 @@ from django.contrib import admin
 from django import forms
 
 from .models import User, Account, SavingsGroup, Piggybox, Address, SGDeposit
+from .Models.Transaction import TransactionHistory
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm
 
@@ -9,8 +10,8 @@ from django.contrib.auth.forms import UserCreationForm
 # Register your models here.
 admin.site.register(Address)
 admin.site.register(SavingsGroup)
-admin.site.register(Piggybox)
 admin.site.register(SGDeposit)
+admin.site.register(TransactionHistory)
 # admin.site.register(models.User)
 
 
@@ -85,17 +86,16 @@ class CustomAdmin(UserAdmin):
 
     inlines = [SavingsGroupInline]  # Add the inline class here
 
+@admin.register(Account)
+class AccountAdmin(admin.ModelAdmin):
+    readonly_fields = [
+        'username', 'account_number','account_balance', 'pin' 
+    ]
 
-admin.site.register(Account)
-# class AccountAdmin(admin.ModelAdmin):
-#     readonly_fields = ('username', 'account_number','account_balance', 'pin' )
 
-
-admin.register(Piggybox)
-class PiggyboxCustomAdmin:
+@admin.register(Piggybox)
+class PiggyboxCustomAdmin(admin.ModelAdmin):
     readonly_fields = [
         'interest', 'date_created', 'date_break', 'date_fulfilled'
     ]
-
-admin.register(PiggyboxCustomAdmin)
 

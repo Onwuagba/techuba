@@ -1,64 +1,75 @@
-from django.shortcuts import render
-from rest_framework import generics
+from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from ..Serializers.AccountSerializer import  AccountSerializer
-from ..models import Account, TransactionHistory
 from ..Serializers.TransactionHistorySerializer import TransactionHistorySerializer
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import IsAdminUser
+from ..Models.Account import Account
+from ..Models.Transaction import TransactionHistory
 # Create your views here.
 
 class ViewAccounts(generics.ListAPIView):
     permission_classes = [IsAdminUser]
 
     serializer_class = AccountSerializer
-    queryset = Account.objects.all()
+    queryset = Account.objects.select_related('username')
 
 class AccountTransactionHistory(APIView):
-    def get(self, request):
+    def get(self, request, account_number):
         if request.user.is_authenticated:
             try:
-                # Get all accounts associated with the user
-                user_accounts = Account.objects.filter(username=request.user)
+                account = Account.objects.get(account_number = account_number)
+                query_acct = TransactionHistory.objects.filter(account = account)
 
-                # Initialize an empty list to store transaction history for all accounts
-                all_transactions = []
+                print(f"Received account_number: {account_number}")
 
-                # Iterate over each user account
-                for account in user_accounts:
-                    # Query transaction history for each account
-                    query_acct = TransactionHistory.objects.filter(account=account)
 
-                    if query_acct:
-                        serializer = TransactionHistorySerializer(query_acct, many=True)
+                if query_acct.exists():
+                    serializer = TransactionHistorySerializer(query_acct, many=True)
+
+                    if request.user == account.username: 
+
+                        # Format the serialized data
                         formatted_data = [
                             {
-                                'Transaction type': transaction['transaction_type'],
-                                'Account number': transaction['account_number'],
+                                'Transaction_type': transaction['transaction_type'],
                                 'Amount': transaction['amount'],
-                                'Account balance': transaction['account_balance'],
+                                'Account_balance': transaction['account_balance'],
                                 'Time': transaction['timestamp'],
                                 # Add more fields as needed
                             }
                             for transaction in serializer.data
                         ]
-                        # Append transaction history for the current account
-                        all_transactions.append({
+
+                        # Return transaction history for the specified account
+                        return Response({
                             'Account': account.account_number,
                             'Transactions': formatted_data
-                        })
+                        }, status=status.HTTP_200_OK)
                     else:
-                        # Append an entry for the account with no transactions
-                        all_transactions.append({
+                        # Return an entry for the account with no transactions
+                        return Response({
                             'Account': account.account_number,
                             'Transactions': 'No transactions for this account'
-                        })
-
-                return Response(all_transactions)
+                        }, status=status.HTTP_200_OK)
 
             except Account.DoesNotExist:
-                return Response("This user does not have any accounts with us")
+                print("Lol")
+                return Response("This account does not exist", status=status.HTTP_404_NOT_FOUND)
             except Exception as e:
-                return Response(f'An error occurred: {str(e)}')
+                return Response(f'An error occurred: {str(e)}', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         else:
-            return Response("User is not authenticated")
+            return Response("User is not authenticated", status=status.HTTP_401_UNAUTHORIZED)
+
+
+
+class MyAccounts(generics.ListAPIView):
+    serializer_class = AccountSerializer
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Account.objects.filter(username=self.request.user)
+        else:
+            raise AuthenticationFailed('Please log in')
+            
