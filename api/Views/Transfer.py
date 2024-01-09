@@ -4,7 +4,6 @@ from ..Models.Account import Account
 from ..Models.Transaction import Transaction
 from datetime import datetime
 from ..Hashing import check_password
-import pdb
 from django.db import transaction
 
 class Transfer(APIView):
@@ -25,6 +24,7 @@ class Transfer(APIView):
                         return Response("Authenticated user does not have an associated account")
 
                     receiver = Account.objects.get(account_number=receiver_number)
+                    
                     amount = float(amount)
 
                     if sender_account == receiver:

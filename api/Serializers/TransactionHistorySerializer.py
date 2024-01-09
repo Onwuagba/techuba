@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import TransactionHistory
+from ..Models.Transaction import TransactionHistory
 
 class TransactionHistorySerializer(serializers.ModelSerializer):
     class Meta:

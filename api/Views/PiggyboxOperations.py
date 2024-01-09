@@ -15,13 +15,15 @@ class PiggyboxInfo(APIView):
             piggy_id = self.kwargs.get('id')
             try:
                 piggybox = Piggybox.objects.get(id=piggy_id)
-                
+
                 piggybox_info = {
                     "Creator": piggybox.username.email,
                     "Box": piggybox.name_of_box,
-                    "Date Created": piggybox.date_created,
-                    "Target Amount": piggybox.target_amount,
-                    "Current Amount": piggybox.current_amount
+                    "Date_Created": piggybox.date_created,
+                    "Date_Break" : piggybox.date_break,
+                    "Date_Fulfilled" : piggybox.date_fulfilled,
+                    "Target_Amount": piggybox.target_amount,
+                    "Current_Amount": piggybox.current_amount
                 }
 
                 return Response(piggybox_info)
@@ -55,8 +57,6 @@ class MyPiggyboxes(APIView):
                 return Response("You don't have a piggybox yet. Make one today and start saving", status=404)
         else:
             return Response("User is not authenticated")
-
-
 
 class PiggyboxDelete(APIView):
     def delete(self, request):
@@ -143,7 +143,7 @@ class PiggyboxDeposit(APIView):
 
             user = request.user.piggyboxes.get(name_of_box = box_name)
             piggybox = user
-                        
+                         
             user_accounts = request.user.accounts.all()
             account = user_accounts.get(account_number = account)
 
@@ -183,7 +183,6 @@ class PiggyboxDeposit(APIView):
             return Response("User is not authenticated")
 
 class PiggyboxAuto(APIView): 
-
 
     def post(self, request):
         user = request.data.get('user')

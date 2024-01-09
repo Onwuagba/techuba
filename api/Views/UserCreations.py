@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from django.http import JsonResponse        
 from ..serializers import SavingsGroupSerializer, UserSerializer, PiggyboxSerializer, AccountSerializer
 from ..Models.SavingsGroup import SavingsGroup
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework import generics
 from ..Models.User import User
 from ..Models.Piggybox import Piggybox
@@ -16,6 +16,23 @@ from rest_framework.permissions import IsAuthenticated
 
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+class LogoutView(APIView):
+    def post(self, request):
+        if request.user.is_authenticated:
+            refresh_token = request.data.get('refresh_token')
+
+            if refresh_token:
+                try:
+                    token = RefreshToken(refresh_token)
+                    token.blacklist()
+                    return Response({'detail': 'Logout successful.'}, status=200)
+                except Exception as e:
+                    return Response({'detail': 'Invalid token or token has already been used.'}, status=400)
+
+            return Response({'detail': 'No refresh token provided.'}, status=400)
+        return Response('Log in before you log out')
 
 class UserRegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -41,7 +58,7 @@ class UserLogin(APIView):
         if serializer.is_valid():
             user = serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key})
+            return Response({'token': token.key}, status=200)
         else:
             return Response(serializer.errors, status=400)
         
@@ -50,23 +67,18 @@ class UserLogout(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        Token.objects.filter(user=request.user).delete()
-        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        Token.objects.get(user=request.user).delete()
+        return Response({"detail": "logged out."}, status=status.HTTP_200_OK)
     
 
 class PiggyboxCreation(generics.CreateAPIView):
     queryset = Piggybox.objects.all()
     serializer_class = PiggyboxSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]  # Use IsAuthenticated permission
 
     def perform_create(self, serializer):
-        if self.request.user.is_authenticated:
-            serializer.save(username=self.request.user)
-            return Response({'detail': 'Piggybox created successfully'})
-        else:
-            # If not authenticated, return a response indicating authentication is required
-            return Response({'detail': 'Authentication required'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+        serializer.save(username=self.request.user)
+        return Response('Piggybox created successfully')
 
 class AccountCreation(generics.CreateAPIView):
     queryset = Account.objects.all()
@@ -81,7 +93,7 @@ class AccountCreation(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         # Call the super create method to perform the creation
         response = super().create(request, *args, **kwargs)
-        return response
+        return Response(f"Account created successfully: {response.data['account_number']}")
 
 
 class SavingsGroupCreation(generics.CreateAPIView):
@@ -91,7 +103,6 @@ class SavingsGroupCreation(generics.CreateAPIView):
     def perform_create(self, serializer):
         if self.request.user.is_authenticated:
             serializer.save(creator = self.request.user)
-
             return Response("Savings group created successfully")
         elif self.request.user.is_anonymous:
             return Response("Please log in to continue")

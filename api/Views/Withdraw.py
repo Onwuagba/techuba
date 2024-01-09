@@ -2,8 +2,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from ..models import User, Account, TransactionHistory
 from ..serializers import AccountSerializer
+from rest_framework import generics
 from ..Hashing import check_password
 from datetime import datetime
+from rest_framework import permissions, status
 import pdb
 
 class Withdraw(APIView):
@@ -16,10 +18,8 @@ class Withdraw(APIView):
 
             w_account = request.user.accounts.get(account_number = account)
 
-            
             try:
                 amount = float(amount)
-                
                 if amount:
                     if check_password(pin.encode('utf-8'), w_account.pin.encode('utf-8')):
                         if w_account.account_balance > amount:
@@ -28,7 +28,6 @@ class Withdraw(APIView):
 
                             TransactionHistory.objects.create(
                                 account=w_account,
-                                account_number=w_account.account_number,
                                 transaction_type='Withdrawal',
                                 amount = amount,
                                 timestamp = datetime.now(),
@@ -47,4 +46,25 @@ class Withdraw(APIView):
         else:
             return Response("User is not authenticated")
         
+class GetAccount(APIView):
+    def delete(self, request):
+        if request.user.is_authenticated:
+            acc_no = request.data.get('acc_no')
+            pin = request.data.get('pin')
+            try:
+                account = Account.objects.get(username = request.user, account_number = acc_no)
 
+                if request.user == account.username:
+                    if check_password(pin.encode('utf-8'), account.pin.encode('utf-8')):
+                        account.delete()
+                        return Response("This account has been deleted",  status=200)
+                    else:
+                        return Response('Invalid pin')
+                else:
+                    return Response("User is not permitted to delete",  status=403)
+            except Account.DoesNotExist:
+                return Response(f"No such account", status=404)
+
+            # Delete all the transactions in this account
+        else:
+            return Response("User is not permitted to delete", status=401)

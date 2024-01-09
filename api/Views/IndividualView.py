@@ -5,6 +5,6 @@ from ..models import User
 from ..serializers import UserSerializer
 # Create your views here.
 
-class SeeUser(generics.RetrieveUpdateDestroyAPIView):
+class EditUserInformation(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()

@@ -13,6 +13,8 @@ class Transaction(models.Model):
     def __str__(self):
         return self.sender
     
+
+    
 class TransactionHistory(models.Model):
     TRANSACTION_TYPES = [
         ('DEPOSIT', 'Deposit'),
@@ -20,13 +22,12 @@ class TransactionHistory(models.Model):
     ]
 
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
-    account_number = models.CharField(max_length=20, default=000)  # New field for account number
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
     timestamp = models.DateTimeField(auto_now_add=True)
     account_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
-        return str(self.account.account_number)
+        return str(self.account)
     
     

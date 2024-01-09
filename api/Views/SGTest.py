@@ -12,7 +12,7 @@ class Landing(APIView):
         if request.user.is_authenticated:
             user = request.user
             if user.firstname and user.lastname:
-                return Response(f"Welcome {user.firstname}{user.lastname}")
-            return Response(f"Welcome {user.email}!")
+                return Response(f"Welcome {user.firstname} {user.lastname}")
+            return Response(f"Welcome {user.email}")
         else:
             return Response(f"Welcome, register and create an account today!")

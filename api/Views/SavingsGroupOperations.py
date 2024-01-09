@@ -131,14 +131,14 @@ class SavingsGroupDeposit(APIView):
 
                 if sg.group_members.filter(email = request.user).exists():
                     if sg.current_amount < sg.target_amount:
-                        if amount > 0:
-                            if amount <= user_account.account_balance:
-                                user_account.account_balance -= amount
-                                sg.current_amount += amount
+                        if float(amount) > 0:
+                            if float(amount) <= user_account.account_balance:
+                                user_account.account_balance -= float(amount)
+                                sg.current_amount += float(amount)
 
                                 SGDeposit.objects.create(
                                     user = request.user,
-                                    amount = amount,
+                                    amount = float(amount),
                                     sg = instance
                                 )
 
@@ -159,8 +159,8 @@ class SavingsGroupDeposit(APIView):
             except SavingsGroup.DoesNotExist:
                 return Response("Error: No such Savings Group exists", status=status.HTTP_404_NOT_FOUND)
             except Exception as e:
-                return Response({"Error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+                print (str(e))
+                return Response(f'Error: {e}')
         else:
             return Response("Please log in to continue")
         
@@ -190,7 +190,7 @@ class SavingsGroupUserDeposits(APIView):
             except Exception as e:
                 return Response(f"Error: {str(e)}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        return Response("Please log in to continue", status=status.HTTP_401_UNAUTHORIZED)
+        # return Response("Please log in to continue", status=status.HTTP_401_UNAUTHORIZED)
     
 class PublicSavingsGroup(APIView):
     def get(self, request, *args, **kwargs):
@@ -210,7 +210,7 @@ class JoinPublicSavingsGroup(APIView):
                 instance = SavingsGroup.objects.get(group_name = group_name)
 
                 if instance.group_members.filter(email = request.user).exists():
-                    return Response("Wadup nigga")
+                    return Response(" You are a member of this group.")
                 else:
                     add_member = User.objects.get(email = request.user)
                     instance.group_members.add(add_member.id)
@@ -224,23 +224,28 @@ class SavingsGroupLeaderboard(APIView):
     def get(self, request, *args, **kwargs):
         sg = self.kwargs.get('group_name')
         if request.user.is_authenticated:
-            user_deposits = (
-                SGDeposit.objects
-                .filter(sg__group_name = sg) 
-                .values('user__email')
-                .annotate(Total=Sum('amount')) 
-                .order_by('-Total') 
-            )
+            deposits_exist = SGDeposit.objects.filter(sg__group_name=sg).exists()
 
-            return Response(user_deposits)
+            if deposits_exist:
+                user_deposits = (
+                    SGDeposit.objects
+                    .filter(sg__group_name=sg)
+                    .values('user__email')
+                    .annotate(Total=Sum('amount'))
+                    .order_by('-Total')
+                )
+                return Response(user_deposits)
+            else:
+                return Response({"message": "This savings group has no leaderboard yet."}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response("Please log in to continue")   
+        return Response({"message": "Please log in to continue"}, status=status.HTTP_401_UNAUTHORIZED)
     
 class LeaveGroup(APIView):
     def post(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             wa = request.data.get('account')
             sg = self.kwargs.get('group_name')
+
             sgi = SavingsGroup.objects.get(group_name = sg)
 
             sgdi = SGDeposit.objects.filter(user__email = request.user)
@@ -251,7 +256,7 @@ class LeaveGroup(APIView):
             if sgi:
                 if sgi.group_members.filter(email = request.user).exists():
                     if request.user == sgi.creator:
-                        return Response("You can not remove yourself from your group")
+                        return Response("You can not leave your savings group")
                     else:
                         remove_member = User.objects.get(email = request.user)
                         sgi.group_members.remove(remove_member)
